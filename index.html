@@ -3,12 +3,58 @@
 <head>
 	<meta charset="utf-8">
 	<title>D3 Tesst</title>
-	<script type="text/javascript" src="d3/d3.v3.js"></script>
+	<script type="text/javascript" src="d3.js"></script>
 </head>
 
 <body>
 <script type="text/javascript">
-            // Your beautiful D3 code will go here
+	var margin = {left:20, right:20, top:20, bottom:20},
+          height = (500 - margin.top - margin.bottom),
+          width = (960 - margin.left - margin.right);
+            
+    var svg = d3.select("body").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scale.ordinal().rangeRoundBands([0, width], .3825),
+    	y = d3.scale.linear().range([height, 0]),
+    	color = d3.scale.category20c();
+      
+    d3.csv("data/monthly-data.csv", function(error, data) {
+      if (error) throw error;
+      
+      color.domain(d3.keys(data[0]).filter(function(key) {return key !== "Country"; }));
+      data.forEach(function(d) {
+	    var y0 = 0;
+	    d.months = color.domain().map(function(name) { return {name: name, y0: y0, y1: y0 += +d[name]}; });
+	    d.total = d.months[d.months.length - 1].y1;
+	  });
+      data.sort(function(a, b) { return +b.total - +a.total; });
+
+      x.domain(data.map(function(d) { return d.Country; })); //this maps every Country to the x axis. can be rewritten per usual
+      y.domain([0, d3.max(data, function(d) { return d.total +1; })]);    //This goes back and modifies the axis domain
+                
+      var Countrys = svg.selectAll(".Country")
+        .data(data)
+        .enter()
+        .append("g")  
+        .attr("class", "g")
+        .attr("transform", function(d) { return "translate(" + x(d.Country) + ",0)"; });
+      Countrys.selectAll("rect")
+        .data(function(d) { return d.months; })
+        .enter()
+        .append("rect")
+        .attr("width", x.rangeBand())
+        .attr("y", function(d) { return y(d.y1); })
+        .attr("height", function(d) { return y(d.y0) - y(d.y1); })
+        .style("fill", function(d) { return color(d.name); })
+        .append("title")
+          .text(function(d) { return d.y1; });
+
+      });
+
 </script>
 </body>
 </html>

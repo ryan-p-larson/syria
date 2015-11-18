@@ -12,7 +12,8 @@ for row in csv.DictReader(f):
         value = row[month]
         if value == " - ":
             value = 0
-        
+        elif value == " * ":
+            value == 1
         refugees[key][month] = value       
 
 with open("monthly-data.csv", "wb") as outfile:

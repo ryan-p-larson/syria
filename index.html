@@ -4,54 +4,92 @@
 	<meta charset="utf-8">
 	<title>D3 Tesst</title>
 	<script type="text/javascript" src="d3.js"></script>
+
+	<style type="text/css">
+		body {
+		  font: 10px sans-serif;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+		.y.axis path,
+		.y.axis line {
+			display: none;
+		}
+	</style>
 </head>
 
 <body>
 <script type="text/javascript">
-	var margin = {left:20, right:20, top:20, bottom:20},
-          height = (500 - margin.top - margin.bottom),
-          width = (960 - margin.left - margin.right);
+	var margin = {left:120, right:20, top:20, bottom:20},
+        height = (600 - margin.top - margin.bottom),
+        width = (960 - margin.left - margin.right);
             
     var svg = d3.select("body").append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var x = d3.scale.ordinal().rangeRoundBands([0, width], .3825),
-    	y = d3.scale.linear().range([height, 0]),
-    	color = d3.scale.category20c();
+    var y = d3.scale.ordinal().rangeRoundBands([0, height], .3825),
+    	x = d3.scale.linear().range([0, width]),
+    	color = d3.scale.category20c(),
+    	xAxis = d3.svg.axis()
+		    .scale(x)
+		    .orient("top"),
+		yAxis = d3.svg.axis()
+		    .scale(y)
+		    .orient("left");
+		    //.tickFormat(d3.format(".2s"));
       
     d3.csv("data/monthly-data.csv", function(error, data) {
       if (error) throw error;
       
       color.domain(d3.keys(data[0]).filter(function(key) {return key !== "Country"; }));
       data.forEach(function(d) {
-	    var y0 = 0;
-	    d.months = color.domain().map(function(name) { return {name: name, y0: y0, y1: y0 += +d[name]}; });
-	    d.total = d.months[d.months.length - 1].y1;
+	    var x0 = 0;
+	    d.months = color.domain().map(function(name) { return {name: name, x0: x0, x1: x0 += +d[name]}; });
+	    d.total = d.months[d.months.length - 1].x1;
 	  });
-      data.sort(function(a, b) { return +b.total - +a.total; });
 
-      x.domain(data.map(function(d) { return d.Country; })); //this maps every Country to the x axis. can be rewritten per usual
-      y.domain([0, d3.max(data, function(d) { return d.total +1; })]);    //This goes back and modifies the axis domain
+      data.sort(function(a, b) { return +b.total - +a.total; });
+      y.domain(data.map(function(d) { return d.Country; })); 
+      x.domain([0, d3.max(data, function(d) { return +d.total; })]);    
                 
       var Countrys = svg.selectAll(".Country")
         .data(data)
         .enter()
         .append("g")  
         .attr("class", "g")
-        .attr("transform", function(d) { return "translate(" + x(d.Country) + ",0)"; });
+        .attr("transform", function(d) { return "translate(0," + y(d.Country) + ")"; });
       Countrys.selectAll("rect")
         .data(function(d) { return d.months; })
         .enter()
         .append("rect")
-        .attr("width", x.rangeBand())
-        .attr("y", function(d) { return y(d.y1); })
-        .attr("height", function(d) { return y(d.y0) - y(d.y1); })
+        .attr("height", y.rangeBand())
+        .attr("x", function(d) { return x(+d.x0); })
+        .attr("width", function(d) { return x(d.x0) + x(d.x1); })
         .style("fill", function(d) { return color(d.name); })
         .append("title")
-          .text(function(d) { return d.y1; });
+          .text(function(d) { return "Month: " + d.x1; });
+
+		svg.append("g")
+		      .attr("class", "x axis")
+		      .attr("transform", "translate(0," + 0 + ")")
+		      .call(xAxis)
+  		    .append("text")
+		      .attr("transform", "translate(" +(width)+ ",0)")
+		      .style("text-anchor", "end")
+		      .text("Population");
+		
+		svg.append("g")
+		    .attr("class", "y axis")
+		    //.attr("transform", "translate(0,0)")
+		    .call(yAxis);
 
       });
 

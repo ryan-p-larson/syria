@@ -4,17 +4,17 @@
 	<meta charset="utf-8">
 	<title>D3 Tesst</title>
 	<script type="text/javascript" src="d3.js"></script>
-
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'> 
 	<style type="text/css">
 		body {
-		  font: 10px sans-serif;
+		  font: 11px sans-serif;
+		  font-family: "Open Sans";
 		}
-
-		.axis path,
-		.axis line {
-		  fill: none;
-		  stroke: #000;
-		  shape-rendering: crispEdges;
+		.x.axis path,
+		.x.axis line {
+			fill: none;
+			stroke: #000;
+		  	shape-rendering: crispEdges;
 		}
 		.y.axis path,
 		.y.axis line {
@@ -24,27 +24,50 @@
 </head>
 
 <body>
+<div class="context"></div>
+<div class="chart"></div>
 <script type="text/javascript">
-	var margin = {left:120, right:20, top:20, bottom:20},
-        height = (600 - margin.top - margin.bottom),
-        width = (960 - margin.left - margin.right);
+	var margin = {left:125, right:50, top:20, bottom:20},
+        height = 500 - margin.top - margin.bottom,
+        width = 960 - margin.left - margin.right;
             
-    var svg = d3.select("body").append("svg")
+    var svg = d3.select(".chart").append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    var title = d3.select(".context").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", 75)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + ",0)");
 
     var y = d3.scale.ordinal().rangeRoundBands([0, height], .3825),
     	x = d3.scale.linear().range([0, width]),
-    	color = d3.scale.category20c(),
+    	format = d3.format(",d"),
+    	color = d3.scale.ordinal().range(['#a50026','#d73027','#f46d43','#fdae61','#fee090','#e0f3f8','#abd9e9','#74add1','#4575b4','#313695']),
     	xAxis = d3.svg.axis()
 		    .scale(x)
 		    .orient("top"),
 		yAxis = d3.svg.axis()
 		    .scale(y)
 		    .orient("left");
-		    //.tickFormat(d3.format(".2s"));
+
+
+	title.append("text")            
+        .attr("y", 20)
+        .attr("text-anchor", "start")  
+        .style("font-size", "24px") 
+        .style("text-decoration", "bold") 
+        .style("font-family", "Open Sans") 
+        .text("Where are Syrian refugees ending up?");
+    title.append("text")
+    	.attr("id", "timestamp")
+    	.attr("y", 45)
+    	.attr("text-anchor", "start")  
+        .style("font-size", "16px") 
+        .style("font-family", "Open Sans") 
+        .text("Serbia gains more in the month of October than any other country.");
       
     d3.csv("data/monthly-data.csv", function(error, data) {
       if (error) throw error;
@@ -57,11 +80,12 @@
 	  });
 
       data.sort(function(a, b) { return +b.total - +a.total; });
+      data = data.slice(0, 20);
       y.domain(data.map(function(d) { return d.Country; })); 
-      x.domain([0, d3.max(data, function(d) { return +d.total; })]);    
-                
+      x.domain([0, d3.max(data, function(d) { return +d.total; })]);
+
       var Countrys = svg.selectAll(".Country")
-        .data(data)
+        .data(data.slice(0, 20))
         .enter()
         .append("g")  
         .attr("class", "g")
@@ -72,24 +96,56 @@
         .append("rect")
         .attr("height", y.rangeBand())
         .attr("x", function(d) { return x(+d.x0); })
-        .attr("width", function(d) { return x(d.x0) + x(d.x1); })
+        .attr("width", function(d) { return x(d.x1) - x(d.x0); })
         .style("fill", function(d) { return color(d.name); })
         .append("title")
-          .text(function(d) { return "Month: " + d.x1; });
-
+          .text(function(d) { return d.name + ": " + (d.x1 - d.x0); });
+      	//labels
+      	svg.selectAll("text")
+	      	.data(data)
+	      	.enter()
+	      	.append("g")
+	      	.append("text")
+	      	.attr("transform", function(d) { return "translate(" + (x(d.total)+5)  + "," + (y(d.Country)+12) + ")"; })
+	      	.text(function(d) { return format(d.total); })
+	      		.style("fill", function(d) { return d.Country == "Serbia and Kosovo" ? "#a50026":"#000"})
+	      		.style("font-size", "10px")
+	      		.style("text-anchor", "start");
 		svg.append("g")
-		      .attr("class", "x axis")
-		      .attr("transform", "translate(0," + 0 + ")")
-		      .call(xAxis)
+		    .attr("class", "x axis")
+		    .call(xAxis)
   		    .append("text")
-		      .attr("transform", "translate(" +(width)+ ",0)")
-		      .style("text-anchor", "end")
-		      .text("Population");
-		
+		    	.attr("transform", "translate(" +(width + margin.right)+ ",0)")
+		      	.style("text-anchor", "end")
+		      	.style("font-size", "13px")
+		      	.text("Population")
+		      	.attr("dy", -10);
 		svg.append("g")
 		    .attr("class", "y axis")
-		    //.attr("transform", "translate(0,0)")
-		    .call(yAxis);
+		    .call(yAxis)
+  		    .append("text")
+			    .attr("transform", "translate(" +(-45)+ ",0)")
+			    .style("text-anchor", "end")
+			    .style("font-size", "16px")
+			    .text("Country")
+			    .attr("dy", -4);
+
+		var legend = svg.selectAll(".legend")
+		    .data(color.domain().slice().reverse())
+		    .enter().append("g")
+		    .attr("class", "legend")
+		    .attr("transform", function(d, i) { return "translate(" + width + "," + (height-(i * 24)-margin.bottom-margin.top-8) + ")"; });
+		legend.append("rect")
+		    .attr("x", - 18)
+		    .attr("width", 18)
+		    .attr("height", 18)
+		    .style("fill", color);
+		legend.append("text")
+		    .attr("x", - 24)
+		    .attr("y", 9)
+		    .attr("dy", ".35em")
+		    .style("text-anchor", "end")
+		    .text(function(d) { return d; });
 
       });
 

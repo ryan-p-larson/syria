@@ -3,7 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<title>D3 Tesst</title>
-	<script type="text/javascript" src="d3.js"></script>
+	<script type="text/javascript" src="js/d3.js"></script>
+	<script type="text/javascript" src="js/chroma.js"></script>
 	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css'> 
 	<style type="text/css">
 		body {
@@ -13,7 +14,7 @@
 		.x.axis path,
 		.x.axis line {
 			fill: none;
-			stroke: #000;
+			stroke: #333;
 		  	shape-rendering: crispEdges;
 		}
 		.y.axis path,
@@ -50,7 +51,8 @@
     var y = d3.scale.ordinal().rangeRoundBands([0, height], .3825),
     	x = d3.scale.linear().range([0, width]),
     	format = d3.format(",d"),
-    	color = d3.scale.ordinal().range(['#fff7fb','#ece2f0','#d0d1e6','#a6bddb','#67a9cf','#3690c0','#02818a','#016c59','#014636']),
+    	color = d3.scale.ordinal().range(["#abd9e9", "#a8e7e7", "#b6f3dc", "#d5fbcb", "#ffffbf", "#fceca3", "#fcd989", "#fcc473", "#fdae61"]),
+    	testColor = chroma.scale(["#abd9e9", "#ffffbf", "#fdae61"]).domain([0, 100000]).mode('hcl');
     	xAxis = d3.svg.axis()
 		    .scale(x)
 		    .orient("top"),
@@ -90,7 +92,6 @@
       data = data.slice(0, 20);
 	  y.domain(data.map(function(d, i) { return d.Country; })); 
       x.domain([0, d3.max(data, function(d) { return +d.total; })]);
-	  
 	
       var Countrys = svg.selectAll(".Country")
         .data(data.slice(0, 20))
@@ -106,7 +107,8 @@
         .attr("height", y.rangeBand())
         .attr("x", function(d) { return x(+d.x0); })
         .attr("width", function(d) { return x(d.x1) - x(d.x0); })
-        .style("fill", function(d) { return color(d.name); })
+        //.style("fill", function(d) { return color(d.name); })
+        .style("fill", function(d) { return testColor(+d.x1); })
         .append("title")
           .text(function(d) { return d.name + ": " + (d.x1 - d.x0); });
       	//labels
